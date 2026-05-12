@@ -18,7 +18,7 @@ bin = "_output/miniblog"
 # Customize binary, can setup environment variables when run your app.
 full_bin = "./_output/miniblog.exe"
 # Add additional arguments when running binary (bin/full_bin). Will run './tmp/main hello world'.
-args_bin = []
+args_bin = ["-c", "configs/miniblog.yaml"]
 # Watch these filename extensions.
 include_ext = ["go", "tpl", "tmpl", "html"]
 # Ignore these filename extensions or directories.
