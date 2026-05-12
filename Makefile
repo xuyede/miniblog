@@ -3,7 +3,7 @@
 
 # 最终获取了项目根目录的绝对路径
 COMMON_SELF_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
-ROOT_DIR := $(abspath $(shell cd $(COMMON_SELF_DIR)/ && pwd -P))
+ROOT_DIR := $(shell cd $(COMMON_SELF_DIR)/ && pwd -W)
 
 # 构建产物、临时文件存放目录
 OUTPUT_DIR := $(ROOT_DIR)/_output
@@ -19,7 +19,7 @@ all: add-copyright format build
 
 .PHONY: build
 build: tidy # 编译源码，依赖 tidy 目标自动添加/移除依赖包.
-	@go build -v -o $(OUTPUT_DIR)/miniblog.exe $(ROOT_DIR)/cmd/miniblog/main.go
+	@go build -v -o $(OUTPUT_DIR)/miniblog $(ROOT_DIR)/cmd/miniblog/main.go
 
 .PHONY: format
 format: # 格式化 Go 源码.
@@ -27,7 +27,7 @@ format: # 格式化 Go 源码.
 
 .PHONY: add-copyright
 add-copyright: # 添加版权头信息.
-	@addlicense -v -f $(ROOT_DIR)/scripts/boilerplate.txt $(ROOT_DIR) --skip-dirs=third_party,vendor,$(OUTPUT_DIR)
+	@addlicense -v -f $(ROOT_DIR)/scripts/boilerplate.txt --skip-dirs=third_party,vendor,$(OUTPUT_DIR) $(ROOT_DIR)/cmd/miniblog/main.go
 
 .PHONY: swagger
 swagger: # 启动 swagger 在线文档.

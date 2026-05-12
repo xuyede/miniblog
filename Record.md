@@ -37,6 +37,8 @@
 #### 7. 使用Makefile实现上面的步骤
 **配置 Makefile 文件**
 
+- Makefile [学习](https://github.com/marmotedu/geekbang-go/blob/master/makefile/Makefile%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86.md)
+
 ### 二、应用组成及构建
 
 #### 1. 引用配置
