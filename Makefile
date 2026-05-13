@@ -9,6 +9,29 @@ ROOT_DIR := $(shell cd $(COMMON_SELF_DIR)/ && pwd -W)
 OUTPUT_DIR := $(ROOT_DIR)/_output
 
 # ==============================================================================
+# 定义版本相关变量
+## 指定应用使用的 version 包，会通过 `-ldflags -X` 向该包中指定的变量注入值
+VERSION_PACKAGE=github.com/xuyede/miniblog/pkg/version
+
+## 定义 VERSION 语义化版本号
+ifeq ($(origin VERSION), undefined)
+VERSION := $(shell git describe --tags --always --match='v*')
+endif
+
+## 检查代码仓库是否是 dirty（默认dirty）
+GIT_TREE_STATE:="dirty"
+ifeq (, $(shell git status --porcelain 2>/dev/null))
+	GIT_TREE_STATE="clean"
+endif
+GIT_COMMIT:=$(shell git rev-parse HEAD)
+
+GO_LDFLAGS += \
+	-X $(VERSION_PACKAGE).GitVersion=$(VERSION) \
+	-X $(VERSION_PACKAGE).GitCommit=$(GIT_COMMIT) \
+	-X $(VERSION_PACKAGE).GitTreeState=$(GIT_TREE_STATE) \
+	-X $(VERSION_PACKAGE).BuildDate=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+
+# ==============================================================================
 # 以下 all 伪目标指定了当我们在执行 make（不带参数）命令时所默认执行的目标（按执行顺序）
 # add-copyright（添加版权头信息）、format（格式化 Go 源码）、build（编译源码）
 .PHONY: all
@@ -19,7 +42,7 @@ all: add-copyright format build
 
 .PHONY: build
 build: tidy # 编译源码，依赖 tidy 目标自动添加/移除依赖包.
-	@go build -v -o $(OUTPUT_DIR)/miniblog $(ROOT_DIR)/cmd/miniblog/main.go
+	@go build -v -ldflags "$(GO_LDFLAGS)" -o $(OUTPUT_DIR)/miniblog $(ROOT_DIR)/cmd/miniblog/main.go
 
 .PHONY: format
 format: # 格式化 Go 源码.
@@ -40,3 +63,7 @@ tidy: # 自动添加/移除依赖包.
 .PHONY: clean
 clean: # 清理构建产物、临时文件等.
 	@-rm -vrf $(OUTPUT_DIR)
+
+.PHONY: air
+air: # 启动 air 热重载工具.
+	@air -c $(ROOT_DIR)/.air.toml
