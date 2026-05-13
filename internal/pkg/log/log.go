@@ -6,6 +6,7 @@
 package log
 
 import (
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -69,6 +70,22 @@ func NewLogger(opts *Options) *zapLogger {
 		enc.AppendFloat64(float64(d) / float64(time.Millisecond))
 	}
 
+	// 将日志文件路径中的文件名替换为当天日期命名，例如：crash/log/2026-05-13.log
+	outputPaths := make([]string, 0, len(opts.OutputPaths))
+	for _, p := range opts.OutputPaths {
+		if p == "stdout" || p == "stderr" {
+			outputPaths = append(outputPaths, p)
+		} else {
+			dir := filepath.Dir(p)
+			ext := filepath.Ext(p)
+			if ext == "" {
+				ext = ".log"
+			}
+			dateName := time.Now().Format("2006-01-02") + ext
+			outputPaths = append(outputPaths, filepath.Join(dir, dateName))
+		}
+	}
+
 	cfg := &zap.Config{
 		// 是否在日志中显示调用日志所在的文件和行号，例如：`"caller":"miniblog/miniblog.go:75"`
 		DisableCaller: opts.DisableCaller,
@@ -80,7 +97,7 @@ func NewLogger(opts *Options) *zapLogger {
 		Encoding:      opts.Format,
 		EncoderConfig: encoderConfig,
 		// 指定日志输出位置
-		OutputPaths: opts.OutputPaths,
+		OutputPaths: outputPaths,
 		// 设置 zap 内部错误输出位置
 		ErrorOutputPaths: []string{"stderr"},
 	}
