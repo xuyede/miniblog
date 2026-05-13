@@ -19,9 +19,9 @@ VERSION := $(shell git describe --tags --always --match='v*')
 endif
 
 ## 检查代码仓库是否是 dirty（默认dirty）
-GIT_TREE_STATE:="dirty"
+GIT_TREE_STATE:=dirty
 ifeq (, $(shell git status --porcelain 2>/dev/null))
-	GIT_TREE_STATE="clean"
+	GIT_TREE_STATE=clean
 endif
 GIT_COMMIT:=$(shell git rev-parse HEAD)
 

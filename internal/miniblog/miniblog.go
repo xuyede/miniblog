@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/xuyede/miniblog/internal/pkg/log"
-	"github.com/xuyede/miniblog/internal/pkg/version/verflag"
+	"github.com/xuyede/miniblog/pkg/version/verflag"
 )
 
 var cfgFile string
@@ -35,6 +35,9 @@ Find more miniblog information at:
 		SilenceUsage: true,
 		// 指定调用 cmd.Execute() 时，执行的 Run 函数，函数执行失败会返回错误信息
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// 如果 `--version=true`，则打印版本并退出
+			verflag.PrintAndExitIfRequested()
+
 			// 初始化日志
 			log.Init(logOptions())
 			defer log.Sync()
@@ -55,13 +58,13 @@ Find more miniblog information at:
 	// 以下设置，使得 initConfig 函数在每个命令运行时都会被调用以读取配置
 	cobra.OnInitialize(initConfig)
 
-	// Cobra 支持持久性标志(PersistentFlag)，该标志可用于它所分配的命令以及该命令下的每个子命令
+	// Cobra 支持持久性flag(PersistentFlag)，该flag可用于它所分配的命令以及该命令下的每个子命令
 	cmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "The path to the miniblog configuration file. Empty string for no configuration file.")
 
-	// Cobra 也支持本地标志，本地标志只能在其所绑定的命令上使用
+	// Cobra 也支持本地flag，本地flag只能在其所绑定的命令上使用
 	cmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
-	// 添加 --version 标志
+	// 注册 version flag
 	verflag.AddFlags(cmd.PersistentFlags())
 
 	return cmd

@@ -11,7 +11,7 @@ import (
 	"strconv"
 
 	"github.com/spf13/pflag"
-	"github.com/xuyede/miniblog/internal/pkg/version"
+	"github.com/xuyede/miniblog/pkg/version"
 )
 
 type versionValue int
@@ -27,6 +27,7 @@ const (
 	versionFlagName = "version"
 )
 
+// versionFlag 是一个全局变量，表示 `--version` 标志的值.
 var versionFlag = Version(versionFlagName, VersionFalse, "Print version information and quit.")
 
 // Version 包装了 VersionVar 函数.
@@ -40,21 +41,25 @@ func Version(name string, value versionValue, usage string) *versionValue {
 // VersionVar 定义了一个具有指定名称和用法的标志.
 func VersionVar(p *versionValue, name string, value versionValue, usage string) {
 	*p = value
+	// 把设置 --version 的操作指针给了 p （就是 *versionFlag）
 	pflag.Var(p, name, usage)
 	// `--version` 等价于 `--version=true`
+	// 用户传了 --version（无值） → NoOptDefVal 生效 → pflag 调用 versionFlag.Set("true") → *versionFlag = VersionTrue（1）
 	pflag.Lookup(name).NoOptDefVal = "true"
 }
 
+// AddFlags 将 `--version` 标志添加到指定的 FlagSet 中.
 func AddFlags(fs *pflag.FlagSet) {
 	fs.AddFlag(pflag.Lookup(versionFlagName))
 }
 
 // PrintAndExitIfRequested 将检查是否传递了 `--version` 标志，如果是，则打印版本并退出.
 func PrintAndExitIfRequested() {
-	if *versionFlag == VersionRaw {
+	switch *versionFlag {
+	case VersionRaw:
 		fmt.Printf("%#v\n", version.Get())
 		os.Exit(0)
-	} else if *versionFlag == VersionTrue {
+	case VersionTrue:
 		fmt.Printf("%s\n", version.Get())
 		os.Exit(0)
 	}
@@ -84,6 +89,7 @@ func (v *versionValue) Set(s string) error {
 
 		return nil
 	}
+
 	boolVal, err := strconv.ParseBool(s)
 	if boolVal {
 		*v = VersionTrue
