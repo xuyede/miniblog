@@ -140,3 +140,33 @@ func main() {
 **使用 `.yaml` 格式的配置文件来配置应用，并使用 `viper` 读取配置**
 
 - 查看 `miniblog\internal\miniblog\helper.go`
+
+
+### 三、设计日志包
+
+日志包有很多，优先考虑 [zap](https://liwenzhou.com/posts/go/zap/) 和 [logrus](https://www.cnblogs.com/binHome/p/12027471.html)
+
+- 如果对性能要求不高，追求使用简单，可以选择 logrus
+
+- 如果对性能要求较高，并且追求相对方便的使用方式，可以选择 zap
+
+项目使用 `zap` 作为日志包
+
+- 快速学习 - [zap](https://github.com/marmotedu/geekbang-go/blob/master/%E4%BC%98%E7%A7%80%E5%BC%80%E6%BA%90%E6%97%A5%E5%BF%97%E5%8C%85%E4%BD%BF%E7%94%A8%E6%95%99%E7%A8%8B.md#zap%E5%8C%85%E4%BB%8B%E7%BB%8D)
+
+#### 1. 实现miniblog的logger
+
+**参考 `miniblog\internal\pkg\log.go`**
+
+**从已有的代码入手，优先在github社区找，查找方法：**
+
+查找1：尝试在 zap 官方仓库的 README 文件中和仓库中的 examples 这类目录中查找看是否有创建示例（官方仓库是最可能存放这种示例代码的地方。因为是官方仓库，所代码质量会比较高，所以要优先从官方仓库中找）
+
+查找2：尝试在 GitHub 上找
+- 在 GitHub 搜索栏，输入 language:go zap demo 以搜索仓库名/仓库描述中同时有 zap 和 demo 关键字的 Go 代码仓库
+- 按 Most stars 排序
+- 从上到下，阅读检索出的代码仓库，根据代码仓库名和描述，判断是否是可以参考的 Go 项目，如果是，则进入仓库进行更详细的了解
+
+查找3：进行更深入的查找，查找使用了 zap 包的代码，根据代码来判断 Go 代码段或者代码段所在的项目是否可以借鉴使用
+- 在 GitHub 搜索栏，输入 language:go go.uber.org/zap/zapcore 以搜索可能封装了 zap 包的代码段。查看搜索结果的Code
+- 根据代码段内容判断该代码段是否是可能的参考对象。如果是，则打开文件阅读源码，如果觉得源码可以利用，可以再进一步了解其所在的代码仓库，也许你会发现这个代码仓库就是一个完整的实现。
