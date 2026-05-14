@@ -6,9 +6,11 @@
 package miniblog
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -72,11 +74,36 @@ Find more miniblog information at:
 
 // run 函数是实际的业务代码入口函数.
 func run() error {
-	// 打印所有的配置项及其值
-	settings, _ := json.Marshal(viper.AllSettings())
-	log.Infow("All settings", "settings", string(settings))
 
-	// 打印 db -> username 配置项的值
-	log.Infow("DB username", "username", viper.GetString("db.username"))
+	// 设置 Gin 模式
+	gin.SetMode(viper.GetString("runmode"))
+
+	// 创建一个不带任何中间件的路由引擎
+	g := gin.New()
+
+	// 注册 404 Handler.
+	g.NoRoute(func(c *gin.Context) {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "Page not found."})
+	})
+
+	// 注册 /healthz handler.
+	g.GET("/healthz", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	// 创建 HTTP Server 实例
+	httpsrv := &http.Server{
+		Addr: viper.GetString("addr"),
+		// Handler 是一个接口类型，Gin 的 Engine 实现了 http.Handler 接口
+		// 因此可以直接将 Gin 的 Engine 作为 Handler 使用
+		Handler: g,
+	}
+
+	// 启动 HTTP Server
+	log.Infow("监听服务端口", "addr", viper.GetString("addr"))
+	if err := httpsrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Errorw("启动 HTTP Server 失败", "error", err.Error())
+	}
+
 	return nil
 }

@@ -163,11 +163,13 @@ func main() {
 查找1：尝试在 zap 官方仓库的 README 文件中和仓库中的 examples 这类目录中查找看是否有创建示例（官方仓库是最可能存放这种示例代码的地方。因为是官方仓库，所代码质量会比较高，所以要优先从官方仓库中找）
 
 查找2：尝试在 GitHub 上找
+![alt text](image-1.png)
 - 在 GitHub 搜索栏，输入 language:go zap demo 以搜索仓库名/仓库描述中同时有 zap 和 demo 关键字的 Go 代码仓库
 - 按 Most stars 排序
 - 从上到下，阅读检索出的代码仓库，根据代码仓库名和描述，判断是否是可以参考的 Go 项目，如果是，则进入仓库进行更详细的了解
 
 查找3：进行更深入的查找，查找使用了 zap 包的代码，根据代码来判断 Go 代码段或者代码段所在的项目是否可以借鉴使用
+![alt text](image-2.png)
 - 在 GitHub 搜索栏，输入 language:go go.uber.org/zap/zapcore 以搜索可能封装了 zap 包的代码段。查看搜索结果的Code
 - 根据代码段内容判断该代码段是否是可能的参考对象。如果是，则打开文件阅读源码，如果觉得源码可以利用，可以再进一步了解其所在的代码仓库，也许你会发现这个代码仓库就是一个完整的实现。
 
@@ -176,3 +178,45 @@ func main() {
 添加一个`--version`的命令，触发时输出版本信息，git信息
 
 **查看`miniblog\pkg\version`**
+
+### 五、开发Web服务
+
+Go Web 服务中最常用的 API 风格是：`REST` 和 `RPC`。`REST 底层使用的是 HTTP 协议`，`RPC 底层使用的是 RPC 协议`。每种协议，又有其适配的数据交换格式。这种适配，你可以理解为一种事实上的标准，如无特殊需求，无需打破这种适配关系：`REST API 风格采用 JSON 数据格式`，`RPC API 风格采用 Protobuf 数据格式`。
+
+REST 和 RPC 又有其适配的场景，在企业应用开发中，通常会采用 2 种通信协议，一起构建一个优秀的 Go 应用。
+
+- 对外（对接客户端）： REST + JSON 的组合。因为 API 接口规范、数据格式直观、易懂、开发调试方法，再加上客户端和服务端通过 HTTP 协议通信时，无需使用相同的编程语言，所以 REST + JSON 更适合对外提供 API 接口；
+
+- 对内（服务端内部请求）： RPC + Protobuf 的组合。因为 RPC 协议调用方便，Protobuf 格式数据传输效率更高，从而使得 API 接口性能更好，所以 RPC + Probobuf 的组合更适合对内提供接口。
+
+#### 1. http请求处理流程
+![alt text](image.png)
+
+#### 2. 实现一个简单的 REST Web Server
+
+**选择[Gin](https://github.com/gin-gonic/gin)作为 REST Web框架，可以通过[示范](https://github.com/gin-gonic/examples)学习Gin的使用。一句话，Gin 帮你屏蔽了底层的路由匹配、请求解析、响应序列化等重复工作，你只需要关注 handler 里业务逻辑**
+
+一个简单的例子：
+```go
+package main
+
+import (
+    "net/http"
+
+    "github.com/gin-gonic/gin"
+)
+
+func main() {
+    r := gin.Default()
+    r.GET("/ping", func(c *gin.Context) {
+        c.JSON(http.StatusOK, gin.H{
+            "message": "pong",
+        })
+    })
+    r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+}
+```
+
+#### 3. 使用Gin开发服务
+
+**搜索关键字`gin.New()`**
