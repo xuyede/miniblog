@@ -82,8 +82,8 @@ func run() error {
 	// 创建一个不带任何中间件的路由引擎
 	g := gin.New()
 
-	mws := []gin.HandlerFunc{mw.RequestID()}
-
+	// 注册中间件
+	mws := []gin.HandlerFunc{gin.Recovery(), mw.NoCache, mw.Cors, mw.Secure, mw.RequestID()}
 	g.Use(mws...)
 
 	// 注册 404 Handler.

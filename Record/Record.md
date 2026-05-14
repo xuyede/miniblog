@@ -305,7 +305,7 @@ r.GET("/benchmark", MyBenchLogger(), benchEndpoint)
 
 ### 7. Gin中间件开发
 
-开发一个给请求添加X-Request-ID的中间件
+**开发一个给请求添加`X-Request-ID`的中间件**
 
 - 在请求中注入 RequestID
 - 在日志中打印 RequestID
@@ -313,3 +313,11 @@ r.GET("/benchmark", MyBenchLogger(), benchEndpoint)
 **查看`miniblog\internal\pkg\middleware\requestid.go`**
 
 
+**开发一个处理跨域`CORS`的中间件**
+
+- 简单请求:请求方法是 `GET`、`HEAD` 或者 `POST`，并且 HTTP 请求头中只有 `Accept/Accept-Language/Content-Language/Last-Event-ID/Content-Type` 6 种类型，且 `Content-Type` 只能是 `application/x-www-form-urlencoded、multipart/form-data、text、plain` 中的一个值。简单请求会在发送时自动在 HTTP 请求头加上 Origin 字段，来标明当前是哪个源(协议 + 域名 + 端口)，服务端来决定是否放行
+- 复杂请求：不是简单请求就是复杂请求，一般`POST`+`json`的都是复杂请求
+
+判断很简单，如果是`OPTION`请求，添加CORS相关的HEADER
+
+**查看`miniblog\internal\pkg\middleware\header.go`**
