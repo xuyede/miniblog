@@ -321,3 +321,43 @@ r.GET("/benchmark", MyBenchLogger(), benchEndpoint)
 判断很简单，如果是`OPTION`请求，添加CORS相关的HEADER
 
 **查看`miniblog\internal\pkg\middleware\header.go`**
+
+### 程序优雅关停功能
+
+先来说下，为什么要添加优雅关停能力。在应用程序的生命周期中，新功能发布、Bug 修复、配置变更等，都需要重启服务。在服务进程停止的时候，可能需要做一些处理工作，例如：
+
+1. 正在执行的 HTTP 请求，要等待请求执行完并返回，否则该请求会报错，并产生一些脏数据；
+
+2. 异步处理任务，也需要将缓存中的数据处理完成，否则可能会造成一些数据丢失或者不一致；
+
+3. 关闭数据库连接，否则数据库连接池会保存一个无用的连接，造成宝贵的连接资源浪费。
+
+所以，给应用程序实现优雅关停功能，可以大大提高系统的健壮性。
+
+**核心执行链路**
+1. 把启动服务放到 `goroutine` 中
+2. 创建 `os.Signal` 类型的 `channel`，用来捕获程序关停信号
+3. 调用 `signal.Notify` 函数设置需要捕获的信号，需要设置为 `syscall.SIGINT`, `syscall.SIGTERM` 2 种信号
+4. 调用 `<-quit` 阻塞主程序
+5. 如果系统收到 `SIGINT` 和 `SIGTERM` 信号，就会往 `quit channel` 中写入一条 `os.Signal` 类型的数据
+6. quit 读取到数据，解除阻塞状态
+7. 通过 `http.Shutdown` 方法，关停 HTTP 服务
+
+时序图：
+```
+主 goroutine                    HTTP goroutine
+    |                               |
+    |--- go ListenAndServe() ------>| (开始监听)
+    |                               |
+    |<-- 阻塞在 <-quit              | (处理请求中...)
+    |                               |
+ [Ctrl+C]                           |
+    |                               |
+    |--- Shutdown(ctx) ------------>| 停止接受新连接
+    |                               | 等待处理中的请求完成
+    |                               |
+    |<-- Shutdown 返回 ------------ |
+    |                               |
+ log("服务退出")                   goroutine 结束
+```
+

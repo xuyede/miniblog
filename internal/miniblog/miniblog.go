@@ -6,9 +6,14 @@
 package miniblog
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
@@ -108,9 +113,33 @@ func run() error {
 
 	// 启动 HTTP Server
 	log.Infow("监听服务端口", "addr", viper.GetString("addr"))
-	if err := httpsrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Errorw("启动 HTTP Server 失败", "error", err.Error())
+	go func() {
+		// 正常关闭时会返回 http.ErrServerClosed 错误，这不算错误，所以用 !errors.Is 过滤掉
+		if err := httpsrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Errorw("启动 HTTP Server 失败", "error", err.Error())
+		}
+	}()
+
+	// 等待中断信号优雅地关闭服务器（10 秒超时)
+	quit := make(chan os.Signal, 1)
+	// kill 默认会发送 syscall.SIGTERM 信号
+	// kill -2 发送 syscall.SIGINT 信号，我们常用的 CTRL + C 就是触发系统 SIGINT 信号
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	// 管道取值阻塞，等待关闭信号后再执行
+	<-quit
+	log.Infow("正在关闭服务...")
+
+	// 创建 ctx 用于通知服务器 goroutine, 它有 10 秒时间完成当前正在处理的请求
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// 10 秒内优雅关闭服务（将未处理完的请求处理完再关闭服务），超过 10 秒就超时退出
+	if err := httpsrv.Shutdown(ctx); err != nil {
+		log.Errorw("服务被迫关闭", "err", err)
+		return err
 	}
+
+	log.Infow("服务退出")
 
 	return nil
 }
