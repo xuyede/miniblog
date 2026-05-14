@@ -1,12 +1,12 @@
-### 一、初始化项目
+## 一、初始化项目
 
-#### 1. 初始化GO模块
+### 1. 初始化GO模块
 - go mod init <project>
 
-#### 2. 初始化Git
+### 2. 初始化Git
 - 使用 [.gitignore](https://www.toptal.com/developers/gitignore)快速生成相关项目的模版
 
-#### 3. 热加载工具
+### 3. 热加载工具
 
 - 使用 [air](https://github.com/air-verse/air/blob/master/README-zh_cn.md)
 
@@ -16,32 +16,32 @@
 
 ```执行：air -c .air.toml```
 
-#### 4. 使用Swagger编写接口文档
+### 4. 使用Swagger编写接口文档
 1. ```go install github.com/go-swagger/go-swagger/cmd/swagger@latest```
 
 2. ```swagger serve -F=swagger --no-open --port 65534 ./api/openapi/openapi.yaml```
 
 3. 在浏览器中打开 http://localhost:65534/docs
 
-#### 5. 添加 LICENSE
+### 5. 添加 LICENSE
 1. ```go install github.com/nishanths/license/v5@latest```
 
 2. ```license -n 'Deye(许业德) <xuyede77@gmail.com>' -o LICENSE mit```
 
-#### 6. 给源文件添加版本声明
+### 6. 给源文件添加版本声明
 
 1. ```go install github.com/marmotedu/addlicense@latest```
 
 2. ```addlicense -v -f ./scripts/boilerplate.txt --skip-dirs=third_party,vendor,_output .cmd/miniblog/main.go```
 
-#### 7. 使用Makefile实现上面的步骤
+### 7. 使用Makefile实现上面的步骤
 **配置 Makefile 文件**
 
 - Makefile [学习](https://github.com/marmotedu/geekbang-go/blob/master/makefile/Makefile%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86.md)
 
-### 二、应用组成及构建
+## 二、应用组成及构建
 
-#### 1. 引用配置
+### 1. 引用配置
 
 - 命令行选项、命令行参数： 选择 [pflag](https://github.com/spf13/pflag)；
 
@@ -56,7 +56,7 @@
 
 **结论：直接使用`pflag` + `viper`**
 
-#### 2. 应用业务逻辑
+### 2. 应用业务逻辑
 
 应用的业务逻辑根据业务的不同差别很大。一般而言，一个 Go 应用中会执行以下类别的业务逻辑处理（可能会用到其中一个或多个）：
 
@@ -72,7 +72,7 @@
 
 - 执行特定的业务处理，并退出程序；
 
-#### 3. 应用启动框架
+### 3. 应用启动框架
 
 启动框架你可以理解为一个 main 函数，只不过这里的 main 函数是有代码结构的，并可能分散在多个 Go 源码文件中，在这个大函数中，你可以读取配置文件、初始化业务逻辑、启动 Web 服务等，例如
 
@@ -127,7 +127,7 @@ func main() {
 
 业务简单可以采用平铺式写法，但是多了就需要工具辅助，推荐[cobra](https://github.com/spf13/cobra)
 
-#### 4. 最佳构建方法
+### 4. 最佳构建方法
 
 **结论: 使用 `pflag`、`viper`、`cobra` 来构建一个强大的应用程序**
 
@@ -135,14 +135,14 @@ func main() {
 - viper - 获取配置文件数据 [学习](https://github.com/marmotedu/geekbang-go/blob/master/%E9%85%8D%E7%BD%AE%E8%A7%A3%E6%9E%90%E7%A5%9E%E5%99%A8-Viper%E5%85%A8%E8%A7%A3.md)
 - cobra - 命令行框架 [学习](https://github.com/marmotedu/geekbang-go/blob/master/%E7%8E%B0%E4%BB%A3%E5%8C%96%E7%9A%84%E5%91%BD%E4%BB%A4%E8%A1%8C%E6%A1%86%E6%9E%B6-Cobra%E5%85%A8%E8%A7%A3.md)
 
-#### 5. 选择配置读取
+### 5. 选择配置读取
 
 **使用 `.yaml` 格式的配置文件来配置应用，并使用 `viper` 读取配置**
 
 - 查看 `miniblog\internal\miniblog\helper.go`
 
 
-### 三、设计日志包
+## 三、设计日志包
 
 日志包有很多，优先考虑 [zap](https://liwenzhou.com/posts/go/zap/) 和 [logrus](https://www.cnblogs.com/binHome/p/12027471.html)
 
@@ -154,7 +154,7 @@ func main() {
 
 - 快速学习 - [zap](https://github.com/marmotedu/geekbang-go/blob/master/%E4%BC%98%E7%A7%80%E5%BC%80%E6%BA%90%E6%97%A5%E5%BF%97%E5%8C%85%E4%BD%BF%E7%94%A8%E6%95%99%E7%A8%8B.md#zap%E5%8C%85%E4%BB%8B%E7%BB%8D)
 
-#### 1. 实现miniblog的logger
+### 1. 实现miniblog的logger
 
 **参考 `miniblog\internal\pkg\log.go`**
 
@@ -173,13 +173,13 @@ func main() {
 - 在 GitHub 搜索栏，输入 language:go go.uber.org/zap/zapcore 以搜索可能封装了 zap 包的代码段。查看搜索结果的Code
 - 根据代码段内容判断该代码段是否是可能的参考对象。如果是，则打开文件阅读源码，如果觉得源码可以利用，可以再进一步了解其所在的代码仓库，也许你会发现这个代码仓库就是一个完整的实现。
 
-### 四、给应用添加版本信息，方便排查
+## 四、给应用添加版本信息，方便排查
 
 添加一个`--version`的命令，触发时输出版本信息，git信息
 
 **查看`miniblog\pkg\version`**
 
-### 五、开发Web服务
+## 五、开发Web服务
 
 Go Web 服务中最常用的 API 风格是：`REST` 和 `RPC`。`REST 底层使用的是 HTTP 协议`，`RPC 底层使用的是 RPC 协议`。每种协议，又有其适配的数据交换格式。这种适配，你可以理解为一种事实上的标准，如无特殊需求，无需打破这种适配关系：`REST API 风格采用 JSON 数据格式`，`RPC API 风格采用 Protobuf 数据格式`。
 
@@ -189,10 +189,10 @@ REST 和 RPC 又有其适配的场景，在企业应用开发中，通常会采�
 
 - 对内（服务端内部请求）： RPC + Protobuf 的组合。因为 RPC 协议调用方便，Protobuf 格式数据传输效率更高，从而使得 API 接口性能更好，所以 RPC + Probobuf 的组合更适合对内提供接口。
 
-#### 1. http请求处理流程
+### 1. http请求处理流程
 ![alt text](image.png)
 
-#### 2. 实现一个简单的 REST Web Server
+### 2. 实现一个简单的 REST Web Server
 
 **选择[Gin](https://github.com/gin-gonic/gin)作为 REST Web框架，可以通过[示范](https://github.com/gin-gonic/examples)学习Gin的使用。一句话，Gin 帮你屏蔽了底层的路由匹配、请求解析、响应序列化等重复工作，你只需要关注 handler 里业务逻辑**
 
@@ -217,6 +217,99 @@ func main() {
 }
 ```
 
-#### 3. 使用Gin开发服务
+### 3. 使用Gin开发服务
 
 **搜索关键字`gin.New()`**
+
+### 4. 服务中间件 Middleware
+
+在 Web 开发中，我们要实现很多功能，例如：`认证、授权、限流、熔断、设置请求/返回 Header（例如：请求 ID）、跨域`等，这些都需要通过 Web 中间件的方式来实现，可以说中间件是 Web 框架或者 Web 服务非常核心的一个功能，一个中大型的 Web 应用基本都需要用到。
+
+那么什么是 Web 中间件呢？简单来说，Web 中间件是 HTTP / RPC 请求必经的一个中间层，该中间层可以统一处理所有的请求，你可以根据需要开发不同功能的中间层。例如：你可以在中间层给所有的请求/返回头中添加 `X-Request-ID` 头，用以标识唯一一次请求，方便追踪、排障。
+
+基本上所有的 Web 框架都具有中间件的能力，不同框架可能叫法不同，例如有叫 Filter、Middleware 的，但实现的都是类似的机制。中间件常用在权限验证、日志记录、数据过滤等场景中。
+
+### 5. 中间件在 Gin 中的实现
+
+**Gin相关的中间件库：[点这](https://github.com/gin-gonic/contrib)**
+
+Gin 也具有强大的中间件能力，Gin 的中间件是基于洋葱模型的，如下图所示：
+![alt text](image-3.png)
+
+上图中，有 2 个中间件：Middleware A、Middleware B。HTTP 请求，从开始到结束经历的路径为：Middleware A -> Middleware B -> 主体函数 -> Middleware B -> Middleware A。`执行顺序类似于栈`。
+
+从上图可以知道，Gin 中间件，其实可以起到请求前置拦截和后置拦截的功能：
+
+- 请求前置拦截： Web 请求到达我们定义的 HTTP 请求处理方法之前，拦截请求并进行相应处理；
+
+- 请求后置拦截： 在处理完成请求并响应客户端时，拦截响应并进行相应的处理。
+
+### 6. 中间件类型
+
+#### 全局中间件：全局中间件设置之后对全局的路由都起作用
+
+`r.Use()`，可以根据需要设置 1 个或者多个：
+
+```go
+r := gin.New()
+//一次设置多个中间件
+r.Use(Logger(), Recovery())
+//一次设置一个中间件
+r.Use(gin.Logger())
+r.Use(gin.Recovery())
+```
+
+#### 路由组中间件：路由组中间件仅对该路由组下面的路由起作用
+
+`r.Droup()`
+
+```go
+r := gin.New()
+
+// 声明同时设置
+authorized1 := r.Group("/users", AuthRequired())
+
+// 先声明路由，再通过User添加
+authorized2 := r.Group("/users")
+authorized2.Use(AuthRequired())
+
+// 嵌套组
+testing := authorized2.Group("testing")
+testing.GET( "/analytics" , analyticsEndpoint)
+```
+
+#### 单个路由中间件：单个路由中间件仅对一个路由起作用
+
+```go
+r := gin.New()
+authorized := r.Group("/users")
+
+// 单个路由设置单个中间件
+authorized.POST("/login", loginEndpoint)
+
+// 单个路由设置多个中间件
+r.GET("/benchmark", MyBenchLogger(), benchEndpoint)
+```
+
+#### 总结
+
+上述代码段中，各个中间件作用的路由如下：
+
+- `r.Use(gin.Logger())、r.Use(gin.Recovery())` 将中间件添加在全局路由上，也就是说，所有请求路径以 / 开头的请求都会被 gin.Logger()、gin.Recovery() 中间件按顺序请求；
+
+- AuthRequired() 中间件被添加在了 authorized 路由分组中，也就是所有请求路径以 /users 开头的请求，都会被 AuthRequired() 中间件处理；
+
+- analyticsEndpoint 中间件被添加在了 testing 路由分组中，也就是所有请求路径以 /users/testing 开头的请求，都会被 analyticsEndpoint 中间件处理；
+
+- loginEndpoint 中间件只作用在 POST /users/login 方法。
+
+### 7. Gin中间件开发
+
+开发一个给请求添加X-Request-ID的中间件
+
+- 在请求中注入 RequestID
+- 在日志中打印 RequestID
+
+**查看`miniblog\internal\pkg\middleware\requestid.go`**
+
+

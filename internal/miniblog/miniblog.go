@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/xuyede/miniblog/internal/pkg/log"
+	mw "github.com/xuyede/miniblog/internal/pkg/middleware"
 	"github.com/xuyede/miniblog/pkg/version/verflag"
 )
 
@@ -81,6 +82,10 @@ func run() error {
 	// 创建一个不带任何中间件的路由引擎
 	g := gin.New()
 
+	mws := []gin.HandlerFunc{mw.RequestID()}
+
+	g.Use(mws...)
+
 	// 注册 404 Handler.
 	g.NoRoute(func(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "Page not found."})
@@ -88,6 +93,8 @@ func run() error {
 
 	// 注册 /healthz handler.
 	g.GET("/healthz", func(c *gin.Context) {
+		log.C(c).Infow("Healthz function called")
+
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
