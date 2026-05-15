@@ -13,7 +13,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/xuyede/miniblog/internal/miniblog/store"
 	"github.com/xuyede/miniblog/internal/pkg/log"
+	"github.com/xuyede/miniblog/pkg/db"
 )
 
 const (
@@ -80,4 +82,26 @@ func logOptions() *log.Options {
 		Format:            viper.GetString("log.format"),
 		OutputPaths:       viper.GetStringSlice("log.output-paths"),
 	}
+}
+
+func initStore() error {
+	dbOptions := &db.MySQLOptions{
+		Host:                  viper.GetString("mysql.host"),
+		Username:              viper.GetString("mysql.username"),
+		Password:              viper.GetString("mysql.password"),
+		Database:              viper.GetString("mysql.database"),
+		MaxIdleConnections:    viper.GetInt("mysql.max-idle-connections"),
+		MaxOpenConnections:    viper.GetInt("mysql.max-open-connections"),
+		MaxConnectionLifeTime: viper.GetDuration("mysql.max-connection-life-time"),
+		LogLevel:              viper.GetInt("mysql.log-level"),
+	}
+
+	ins, err := db.NewMySQL(dbOptions)
+	if err != nil {
+		return err
+	}
+
+	_ = store.NewStore(ins)
+
+	return nil
 }

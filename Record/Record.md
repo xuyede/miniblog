@@ -409,4 +409,18 @@ FailedOperation	    操作失败	                                2
 - 查看表的内容：`DESC user;` `DESC post;`
 ![alt text](image-8.png)
 
+- 根据表生成struct：`db2struct --gorm --no-json -H 127.0.0.1 -d miniblog -t user --package model --struct UserM -u root -p '123456' --target=user.go`
+
+### 2. store层
+
+**查看 `miniblog/internal/miniblog/store/store.go`**
+
+- 首先，要创建一个结构体，用来创建 Store 层的实例。自然的，你会想到要在改结构体中包含一个 *gorm.DB 对象，用于与数据库的 CURD；
+
+- 接着，创建一个 New 函数，用来创建 Store 层实例；
+
+- 接着，为了方便直接调用 store 包，引用 Store 层的实例，我们还要设置一个包级别的 Store 实例；
+
+- 最后，为了避免实例被重复创建，通常我们需要使用 sync.Once 来确保实例只被初始化一次。
+
 
