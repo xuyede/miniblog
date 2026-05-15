@@ -383,3 +383,30 @@ FailedOperation	    操作失败	                                2
 **查看`miniblog\internal\pkg\core\core.go`**
 
 ![alt text](image-4.png)
+
+## 六、设计业务架构
+
+根据我们所设计的4层架构，我们可知以下依赖关系：Controller 层依赖 Biz 层，Biz 层依赖 Store 层，Store 层依赖数据库，而 Controller层、Biz 层、Store 层都依赖 Model 层
+
+![alt text](image-5.png)
+
+为了能够随时测试我们所开发的代码功能，最好的方式是先开发依赖少的组件，所以开发顺序为：Model 层 -> Store 层 -> Biz 层 -> Controller 层
+
+### 1. model层
+- 启动mysql：`net start mysql80`、关闭为 `net stop mysql80`
+
+- 登录mysql：`mysql -h127.0.0.1 -P3306 -uroot -p123456`
+![alt text](image-6.png)
+
+- 根据项目的sql生成表：`source configs/miniblog.sql`
+    - 把数据库的表生成到项目中 `mysqldump --column-statistics=0 -h127.0.0.1 -uroot --databases miniblog -p123456 --add-drop-database --add-drop-table --add-drop-trigger --add-locks --no-data > configs/miniblog.sql`
+
+- 切换到miniblog数据库：`USE miniblog;`
+
+- 查看miniblog数据库的表列表：`SHOW TABLES;`
+![alt text](image-7.png)
+
+- 查看表的内容：`DESC user;` `DESC post;`
+![alt text](image-8.png)
+
+
