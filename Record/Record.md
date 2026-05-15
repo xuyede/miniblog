@@ -322,7 +322,7 @@ r.GET("/benchmark", MyBenchLogger(), benchEndpoint)
 
 **查看`miniblog\internal\pkg\middleware\header.go`**
 
-### 程序优雅关停功能
+### 8. 程序优雅关停功能
 
 先来说下，为什么要添加优雅关停能力。在应用程序的生命周期中，新功能发布、Bug 修复、配置变更等，都需要重启服务。在服务进程停止的时候，可能需要做一些处理工作，例如：
 
@@ -361,3 +361,25 @@ r.GET("/benchmark", MyBenchLogger(), benchEndpoint)
  log("服务退出")                   goroutine 结束
 ```
 
+### 9. 优雅处理错误码
+
+**参照[腾讯云API3.0的错误码设计规范](https://github.com/marmotedu/miniblog/blob/master/docs/devel/zh-CN/conversions/error_code.md)，采用二级错误码**
+
+二级错误码
+- 语义化： 语义化的错误码，通过错误码名字，就能知道报错的类型
+- 更加灵活： 二级错误码格式为 `平台级.资源级`。平台级错误码是固定的，用来指代某一类错误，客户端可使用该错误码，进行通用的错误处理。可使用资源级错误码进行更精准的错误处理。此外，服务端可以根据需要自定义错误码，也可以使用默认的错误码。
+
+这里，我们预定义了以下平台级错误码：
+
+```
+错误码	            错误描述	                            错误类型
+InternalError	    内部错误	                                1
+InvalidParameter	参数错误（包括参数类型、格式、值等错误）   0
+AuthFailure	        认证 / 授权错误	                        0
+ResourceNotFound	资源不存在	                            0
+FailedOperation	    操作失败	                                2
+```
+
+**查看`miniblog\internal\pkg\core\core.go`**
+
+![alt text](image-4.png)
