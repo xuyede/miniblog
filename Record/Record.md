@@ -419,8 +419,20 @@ FailedOperation	    操作失败	                                2
 
 - 接着，创建一个 New 函数，用来创建 Store 层实例；
 
-- 接着，为了方便直接调用 store 包，引用 Store 层的实例，我们还要设置一个包级别的 Store 实例；
+- 接着，为了方便直接调用 store 包，引用 Store 层的实例，我们还要设置一个包级别的 Store 实例
 
 - 最后，为了避免实例被重复创建，通常我们需要使用 sync.Once 来确保实例只被初始化一次。
+
+### 3. Biz层
+
+**查看 `miniblog\internal\miniblog\biz\biz.go`**
+
+思路和 store 层一样，使用工厂模式实现
+
+### 4. Controller层
+
+
+
+
 
 
