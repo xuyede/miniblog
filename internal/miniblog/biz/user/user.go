@@ -34,6 +34,8 @@ type UserBiz interface {
 
 func (u *userBiz) Create(ctx context.Context, r *v1.CreateUserRequest) error {
 	var userM model.UserM
+
+	// 把 CreateUserRequest 的字段拷贝到 model.UserM 中.
 	_ = copier.Copy(&userM, r)
 
 	if err := u.ds.Users().Create(ctx, &userM); err != nil {

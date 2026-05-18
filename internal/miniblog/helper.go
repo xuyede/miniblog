@@ -86,14 +86,14 @@ func logOptions() *log.Options {
 
 func initStore() error {
 	dbOptions := &db.MySQLOptions{
-		Host:                  viper.GetString("mysql.host"),
-		Username:              viper.GetString("mysql.username"),
-		Password:              viper.GetString("mysql.password"),
-		Database:              viper.GetString("mysql.database"),
-		MaxIdleConnections:    viper.GetInt("mysql.max-idle-connections"),
-		MaxOpenConnections:    viper.GetInt("mysql.max-open-connections"),
-		MaxConnectionLifeTime: viper.GetDuration("mysql.max-connection-life-time"),
-		LogLevel:              viper.GetInt("mysql.log-level"),
+		Host:                  viper.GetString("db.host"),
+		Username:              viper.GetString("db.username"),
+		Password:              viper.GetString("db.password"),
+		Database:              viper.GetString("db.database"),
+		MaxIdleConnections:    viper.GetInt("db.max-idle-connections"),
+		MaxOpenConnections:    viper.GetInt("db.max-open-connections"),
+		MaxConnectionLifeTime: viper.GetDuration("db.max-connection-life-time"),
+		LogLevel:              viper.GetInt("db.log-level"),
 	}
 
 	ins, err := db.NewMySQL(dbOptions)
