@@ -1,40 +1,45 @@
 ## 一、初始化项目
 
 ### 1. 初始化GO模块
+
 - go mod init <project>
 
 ### 2. 初始化Git
+
 - 使用 [.gitignore](https://www.toptal.com/developers/gitignore)快速生成相关项目的模版
 
 ### 3. 热加载工具
 
 - 使用 [air](https://github.com/air-verse/air/blob/master/README-zh_cn.md)
 
-```go install github.com/cosmtrek/air@latest```
+`go install github.com/cosmtrek/air@latest`
 
 **配置 .air.toml 文件**
 
-```执行：air -c .air.toml```
+`执行：air -c .air.toml`
 
 ### 4. 使用Swagger编写接口文档
-1. ```go install github.com/go-swagger/go-swagger/cmd/swagger@latest```
 
-2. ```swagger serve -F=swagger --no-open --port 65534 ./api/openapi/openapi.yaml```
+1. `go install github.com/go-swagger/go-swagger/cmd/swagger@latest`
+
+2. `swagger serve -F=swagger --no-open --port 65534 ./api/openapi/openapi.yaml`
 
 3. 在浏览器中打开 http://localhost:65534/docs
 
 ### 5. 添加 LICENSE
-1. ```go install github.com/nishanths/license/v5@latest```
 
-2. ```license -n 'Deye(许业德) <xuyede77@gmail.com>' -o LICENSE mit```
+1. `go install github.com/nishanths/license/v5@latest`
+
+2. `license -n 'Deye(许业德) <xuyede77@gmail.com>' -o LICENSE mit`
 
 ### 6. 给源文件添加版本声明
 
-1. ```go install github.com/marmotedu/addlicense@latest```
+1. `go install github.com/marmotedu/addlicense@latest`
 
-2. ```addlicense -v -f ./scripts/boilerplate.txt --skip-dirs=third_party,vendor,_output .cmd/miniblog/main.go```
+2. `addlicense -v -f ./scripts/boilerplate.txt --skip-dirs=third_party,vendor,_output .cmd/miniblog/main.go`
 
 ### 7. 使用Makefile实现上面的步骤
+
 **配置 Makefile 文件**
 
 - Makefile [学习](https://github.com/marmotedu/geekbang-go/blob/master/makefile/Makefile%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86.md)
@@ -141,7 +146,6 @@ func main() {
 
 - 查看 `miniblog\internal\miniblog\helper.go`
 
-
 ## 三、设计日志包
 
 日志包有很多，优先考虑 [zap](https://liwenzhou.com/posts/go/zap/) 和 [logrus](https://www.cnblogs.com/binHome/p/12027471.html)
@@ -164,12 +168,14 @@ func main() {
 
 查找2：尝试在 GitHub 上找
 ![alt text](image-1.png)
+
 - 在 GitHub 搜索栏，输入 language:go zap demo 以搜索仓库名/仓库描述中同时有 zap 和 demo 关键字的 Go 代码仓库
 - 按 Most stars 排序
 - 从上到下，阅读检索出的代码仓库，根据代码仓库名和描述，判断是否是可以参考的 Go 项目，如果是，则进入仓库进行更详细的了解
 
 查找3：进行更深入的查找，查找使用了 zap 包的代码，根据代码来判断 Go 代码段或者代码段所在的项目是否可以借鉴使用
 ![alt text](image-2.png)
+
 - 在 GitHub 搜索栏，输入 language:go go.uber.org/zap/zapcore 以搜索可能封装了 zap 包的代码段。查看搜索结果的Code
 - 根据代码段内容判断该代码段是否是可能的参考对象。如果是，则打开文件阅读源码，如果觉得源码可以利用，可以再进一步了解其所在的代码仓库，也许你会发现这个代码仓库就是一个完整的实现。
 
@@ -190,6 +196,7 @@ REST 和 RPC 又有其适配的场景，在企业应用开发中，通常会采�
 - 对内（服务端内部请求）： RPC + Protobuf 的组合。因为 RPC 协议调用方便，Protobuf 格式数据传输效率更高，从而使得 API 接口性能更好，所以 RPC + Probobuf 的组合更适合对内提供接口。
 
 ### 1. http请求处理流程
+
 ![alt text](image.png)
 
 ### 2. 实现一个简单的 REST Web Server
@@ -197,6 +204,7 @@ REST 和 RPC 又有其适配的场景，在企业应用开发中，通常会采�
 **选择[Gin](https://github.com/gin-gonic/gin)作为 REST Web框架，可以通过[示范](https://github.com/gin-gonic/examples)学习Gin的使用。一句话，Gin 帮你屏蔽了底层的路由匹配、请求解析、响应序列化等重复工作，你只需要关注 handler 里业务逻辑**
 
 一个简单的例子：
+
 ```go
 package main
 
@@ -312,7 +320,6 @@ r.GET("/benchmark", MyBenchLogger(), benchEndpoint)
 
 **查看`miniblog\internal\pkg\middleware\requestid.go`**
 
-
 **开发一个处理跨域`CORS`的中间件**
 
 - 简单请求:请求方法是 `GET`、`HEAD` 或者 `POST`，并且 HTTP 请求头中只有 `Accept/Accept-Language/Content-Language/Last-Event-ID/Content-Type` 6 种类型，且 `Content-Type` 只能是 `application/x-www-form-urlencoded、multipart/form-data、text、plain` 中的一个值。简单请求会在发送时自动在 HTTP 请求头加上 Origin 字段，来标明当前是哪个源(协议 + 域名 + 端口)，服务端来决定是否放行
@@ -335,6 +342,7 @@ r.GET("/benchmark", MyBenchLogger(), benchEndpoint)
 所以，给应用程序实现优雅关停功能，可以大大提高系统的健壮性。
 
 **核心执行链路**
+
 1. 把启动服务放到 `goroutine` 中
 2. 创建 `os.Signal` 类型的 `channel`，用来捕获程序关停信号
 3. 调用 `signal.Notify` 函数设置需要捕获的信号，需要设置为 `syscall.SIGINT`, `syscall.SIGTERM` 2 种信号
@@ -344,6 +352,7 @@ r.GET("/benchmark", MyBenchLogger(), benchEndpoint)
 7. 通过 `http.Shutdown` 方法，关停 HTTP 服务
 
 时序图：
+
 ```
 主 goroutine                    HTTP goroutine
     |                               |
@@ -366,6 +375,7 @@ r.GET("/benchmark", MyBenchLogger(), benchEndpoint)
 **参照[腾讯云API3.0的错误码设计规范](https://github.com/marmotedu/miniblog/blob/master/docs/devel/zh-CN/conversions/error_code.md)，采用二级错误码**
 
 二级错误码
+
 - 语义化： 语义化的错误码，通过错误码名字，就能知道报错的类型
 - 更加灵活： 二级错误码格式为 `平台级.资源级`。平台级错误码是固定的，用来指代某一类错误，客户端可使用该错误码，进行通用的错误处理。可使用资源级错误码进行更精准的错误处理。此外，服务端可以根据需要自定义错误码，也可以使用默认的错误码。
 
@@ -393,21 +403,22 @@ FailedOperation	    操作失败	                                2
 为了能够随时测试我们所开发的代码功能，最好的方式是先开发依赖少的组件，所以开发顺序为：Model 层 -> Store 层 -> Biz 层 -> Controller 层
 
 ### 1. model层
+
 - 启动mysql：`net start mysql80`、关闭为 `net stop mysql80`
 
 - 登录mysql：`mysql -h127.0.0.1 -P3306 -uroot -p123456`
-![alt text](image-6.png)
+  ![alt text](image-6.png)
 
 - 根据项目的sql生成表：`source configs/miniblog.sql`
-    - 把数据库的表生成到项目中 `mysqldump --column-statistics=0 -h127.0.0.1 -uroot --databases miniblog -p123456 --add-drop-database --add-drop-table --add-drop-trigger --add-locks --no-data > configs/miniblog.sql`
+  - 把数据库的表生成到项目中 `mysqldump --column-statistics=0 -h127.0.0.1 -uroot --databases miniblog -p123456 --add-drop-database --add-drop-table --add-drop-trigger --add-locks --no-data > configs/miniblog.sql`
 
 - 切换到miniblog数据库：`USE miniblog;`
 
 - 查看miniblog数据库的表列表：`SHOW TABLES;`
-![alt text](image-7.png)
+  ![alt text](image-7.png)
 
 - 查看表的内容：`DESC user;` `DESC post;`
-![alt text](image-8.png)
+  ![alt text](image-8.png)
 
 - 根据表生成struct：`db2struct --gorm --no-json -H 127.0.0.1 -d miniblog -t user --package model --struct UserM -u root -p '123456' --target=user.go`
 
@@ -415,7 +426,7 @@ FailedOperation	    操作失败	                                2
 
 **查看 `miniblog/internal/miniblog/store/store.go`**
 
-- 首先，要创建一个结构体，用来创建 Store 层的实例。自然的，你会想到要在改结构体中包含一个 *gorm.DB 对象，用于与数据库的 CURD；
+- 首先，要创建一个结构体，用来创建 Store 层的实例。自然的，你会想到要在改结构体中包含一个 \*gorm.DB 对象，用于与数据库的 CURD；
 
 - 接着，创建一个 New 函数，用来创建 Store 层实例；
 
@@ -431,8 +442,83 @@ FailedOperation	    操作失败	                                2
 
 ### 4. Controller层
 
+**查看 `miniblog\internal\miniblog\controller\v1\user\user.go`**
 
+Controller 层主要完成：接收 HTTP 请求，并进行参数解析、参数校验、逻辑分发处理、请求返回操作
 
+### 4. 四个层的初始化和调用链路
+
+初始化链路：
+
+```plain
+main() → command.Execute() → RunE → run()
+                                       │
+                                       ▼
+                ┌─── initStore() ───────────────────────────┐
+                │
+                │  ① db.NewMySQL(opts)
+                │     → 连接 MySQL，返回 *gorm.DB
+                │
+                │  ② store.NewStore(ins)
+                │     → 创建全局 store.S = &datastore{db}
+                │     → sync.Once 保证只初始化一次
+                └───────────────────────────────────────────┘
+                        │
+                        ▼
+                ┌─── installRouters(g) ─────────────────────┐
+                │
+                │  ① uc := user.New(store.S)
+                │     → 创建 UserController{b: biz.NewBiz(store.S)}
+                │     → Controller 持有 Biz
+                │     → Biz 持有 Store（IStore 接口）
+                │
+                │  ② userv1.POST("", uc.Create)
+                │     → 注册路由，绑定 handler
+                └───────────────────────────────────────────┘
+```
+
+`初始化数据库 -> 初始化Store -> 初始化Controller -> 初始化Biz`
+
+依赖注入链（从外到内）:
+```plain
+store.S（全局单例，持有 *gorm.DB）
+    │
+    │  注入到
+    ▼
+user.New(store.S)  → UserController{ b: biz.NewBiz(store.S) }
+                                          │
+                                          │  NewBiz 内部保存 ds
+                                          ▼
+                                     biz{ ds: store.S }
+                                          │
+                                          │  Users() 时创建
+                                          ▼
+                                     userBiz{ ds: store.S }
+                                          │
+                                          │  调用 ds.Users() 时创建
+                                          ▼
+                                     users{ db: *gorm.DB }
+```
+
+请求时的调用链路：
+```plain
+请求 POST /v1/users
+    │
+    ▼
+Controller（create.go）
+    │  ctrl.b.Users().Create(c, &r)
+    ▼
+Biz（biz/user/user.go）
+    │  copier.Copy → u.ds.Users().Create(ctx, &userM)
+    ▼
+Store（store/user.go）
+    │  u.db.Create(&userM).Error
+    ▼
+Model + GORM Hook（model/user.go）
+    │  BeforeCreate → 密码加密
+    ▼
+MySQL 写入
+```
 
 
 
