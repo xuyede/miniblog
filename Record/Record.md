@@ -480,27 +480,29 @@ main() → command.Execute() → RunE → run()
 `初始化数据库 -> 初始化Store -> 初始化Controller -> 初始化Biz`
 
 依赖注入链（从外到内）:
+
 ```plain
 store.S（全局单例，持有 *gorm.DB）
     │
     │  注入到
     ▼
 user.New(store.S)  → UserController{ b: biz.NewBiz(store.S) }
-                                          │
-                                          │  NewBiz 内部保存 ds
-                                          ▼
-                                     biz{ ds: store.S }
-                                          │
-                                          │  Users() 时创建
-                                          ▼
-                                     userBiz{ ds: store.S }
-                                          │
-                                          │  调用 ds.Users() 时创建
-                                          ▼
-                                     users{ db: *gorm.DB }
+                                │
+                                │  NewBiz 内部保存 ds
+                                ▼
+                            biz{ ds: store.S }
+                                │
+                                │  Users() 时创建
+                                ▼
+                            userBiz{ ds: store.S }
+                                │
+                                │  调用 ds.Users() 时创建
+                                ▼
+                            users{ db: *gorm.DB }
 ```
 
 请求时的调用链路：
+
 ```plain
 请求 POST /v1/users
     │
@@ -519,6 +521,94 @@ Model + GORM Hook（model/user.go）
     ▼
 MySQL 写入
 ```
+
+## 七、应用安全
+
+### 1. 应用认证、授权设计
+
+- 认证（Authentication，简称 `Authn`）： 一般指身份验证，指通过一定的手段，完成对用户身份的确认。认证用来证明你是谁。
+- 授权（Authorization，简称 `Authz`）： 授权发生在身份认证成功之后，用来确认你对某个资源是否有某类操作权限。授权用来证明你能做什么。
+
+#### JWT（JSON Web Token）
+
+在 JWT 中，Token 有三部分组成（`header、payload和signature`），中间用 . 隔开，并使用 Base64 编码：
+`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE1MjgwMTY5MjIsImlkIjowLCJuYmYiOjE1MjgwMTY5MjIsInVzZXJuYW1lIjoiYWRtaW4ifQ.LjxrK9DuAwAzUD8-9v43NzWBN7HXsSLfebw92DKd1JQ
+`
+
+**header**
+
+JWT Token 的 header 中，包含两部分信息：
+
+- Token 的类型
+
+- Token 所使用的加密算法
+
+```json
+{
+  "typ": "JWT",
+  "alg": "HS256"
+}
+```
+
+该例说明 Token 类型是 JWT，加密算法是 HS256
+
+**payload**
+
+Payload 中携带 Token 的具体内容，里面有一些标准的字段
+
+- iss：JWT Token 的签发者
+
+- sub：主题
+
+- exp：JWT Token 过期时间
+
+- aud：接收 JWT Token 的一方
+
+- iat：JWT Token 签发时间
+
+- nbf：JWT Token 生效时间
+
+- jti：JWT Token ID
+
+```json
+{
+  "id": 2,
+  "username": "kong",
+  "nbf": 1527931805,
+  "iat": 1527931805
+}
+```
+
+**Signature**
+
+Signature 是 Token 的签名部分，通过如下方式生成
+
+1. 用 Base64 对 header.payload 进行编码
+
+2. 用 Secret 对编码后的内容进行加密，加密后的内容即为 Signature
+
+`Secret 相当于一个密码，存储在服务端，一般通过配置文件来配置 Secret 的值`
+
+#### 身份认证
+
+根据我们的需求，这里介绍下实现思路。
+
+我们要加密密码，并对比密码，并且这 2 个操作，是一个通用操作，所以可开发一个 `auth` 包供所有项目使用（上一节我们已经开发过了）。
+
+我们需要根据密钥来签发并解析 Token，这 2 个操作，也是一个通用操作，所以可开发一个 `token` 包供所有项目使用。
+
+因为身份认证需要对所有请求进行认证，所以我们很容易想到使用 Gin 中间件来完成身份认证。
+
+因为我们要实现 `POST /login` 和 `PUT /v1/users/:name/change-password` 2 个新接口，所以，我们要为这 2 个接口在 Store 层、Biz 层、Controller 层按顺序分别开发代码，并将这 2 个接口添加到 Gin 路由中。
+
+根据需要实现的功能、思路和依赖关系，我们整理出以下开发步骤：
+
+- 开发 token 包 **查看 `miniblog\pkg\token\token.go`**
+
+- 开发 Gin 中间件实现身份认证 **查看 `miniblog\internal\pkg\middleware\authn.go`**
+
+- 实现 POST /login 和 PUT /v1/users/:name/change-password 接口
+
 
 
 

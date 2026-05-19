@@ -19,8 +19,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/xuyede/miniblog/internal/pkg/known"
 	"github.com/xuyede/miniblog/internal/pkg/log"
 	mw "github.com/xuyede/miniblog/internal/pkg/middleware"
+	"github.com/xuyede/miniblog/pkg/token"
 	"github.com/xuyede/miniblog/pkg/version/verflag"
 )
 
@@ -85,6 +87,9 @@ func run() error {
 		log.Errorw("初始化 store 层失败", "err", err)
 		return err
 	}
+
+	// 设置 token 包的签发密钥，用于 token 包 token 的签发和解析
+	token.Init(viper.GetString("jwt-secret"), known.XUsernameKey)
 
 	// 设置 Gin 模式
 	gin.SetMode(viper.GetString("runmode"))
