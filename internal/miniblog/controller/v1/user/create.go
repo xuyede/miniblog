@@ -15,6 +15,8 @@ import (
 	v1 "github.com/xuyede/miniblog/pkg/api/miniblog/v1"
 )
 
+const defaultMethods = "(GET)|(POST)|(PUT)|(DELETE)"
+
 func (ctrl *UserController) Create(c *gin.Context) {
 	log.C(c).Infow("POST /v1/users called")
 
@@ -35,6 +37,12 @@ func (ctrl *UserController) Create(c *gin.Context) {
 	if err := ctrl.b.Users().Create(c, &r); err != nil {
 		core.GenarateResponse(c, err, nil)
 
+		return
+	}
+
+	// 创建用户成功后，给该用户添加访问 /v1/users/:name 的权限
+	if _, err := ctrl.a.AddNamedPolicy("p", r.Username, "/v1/users/"+r.Username, defaultMethods); err != nil {
+		core.GenarateResponse(c, err, nil)
 		return
 	}
 

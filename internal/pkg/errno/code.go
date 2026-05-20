@@ -33,4 +33,7 @@ var (
 
 	// ErrPasswordIncorrect 表示密码错误.
 	ErrPasswordIncorrect = &Errno{HTTP: 401, Code: "AuthFailure.PasswordIncorrect", Message: "Password was incorrect."}
+
+	// ErrUnauthorized 表示请求没有被授权.
+	ErrUnauthorized = &Errno{HTTP: 401, Code: "AuthFailure.Unauthorized", Message: "Unauthorized."}
 )

@@ -13,6 +13,7 @@ import (
 	"github.com/xuyede/miniblog/internal/pkg/errno"
 	"github.com/xuyede/miniblog/internal/pkg/log"
 	mw "github.com/xuyede/miniblog/internal/pkg/middleware"
+	"github.com/xuyede/miniblog/pkg/auth"
 )
 
 func installRouters(g *gin.Engine) error {
@@ -28,8 +29,13 @@ func installRouters(g *gin.Engine) error {
 		core.GenarateResponse(c, nil, map[string]string{"status": "ok"})
 	})
 
+	authz, err := auth.NewAuthz(store.S.DB())
+	if err != nil {
+		return err
+	}
+
 	// 创建 user 模块的 controller，并将 store.S 传递给它，以创建 Store .
-	uc := user.New(store.S)
+	uc := user.New(store.S, authz)
 
 	// 注册 /login
 	g.POST("/login", uc.Login)
@@ -41,10 +47,9 @@ func installRouters(g *gin.Engine) error {
 		userv1 := v1.Group("/users")
 		{
 			userv1.POST("", uc.Create)
-
-			// 该路由组需要认证中间件进行保护，只有合法用户才能访问
-			userv1.Use(mw.Authn())
 			userv1.PUT(":name/change-password", uc.ChangePassword)
+			userv1.Use(mw.Authn(), mw.Authz(authz))
+			userv1.GET(":name", uc.Get) // 获取用户详情
 		}
 	}
 

@@ -609,6 +609,101 @@ Signature 是 Token 的签名部分，通过如下方式生成
 
 - 实现 POST /login 和 PUT /v1/users/:name/change-password 接口
 
+#### 服务授权
 
+要实现服务授权，首先要根据业务选择一个授权模式，不同的权限模型具有不同的特点，可以满足不同的需求。常见的权限模型有下面这 5 种：
 
+- 权限控制列表（ACL，Access Control List）；
+- 自主访问控制（DAC，Discretionary Access Control）；
+- 强制访问控制（MAC，Mandatory Access Control）；
+- 基于角色的访问控制（RBAC，Role-Based Access Control）；
+- 基于属性的权限验证（ABAC，Attribute-Based Access Control）
 
+其中最常用的是`RBAC模式`，推荐 [casbin](https://casbin.apache.org/zh/docs/overview/)
+
+整理出以下开发步骤：
+
+- 开发 authz 包，用来创建 SyncedEnforcer 实例 **查看 `miniblog\pkg\auth\authz.go`**
+
+- 开发 Gin 授权中间件，并将 SyncedEnforcer 实例传入中间件层使用 **查看 `miniblog\internal\pkg\middleware\authz.go`**
+
+- 将 SyncedEnforcer 实例传入 Controller 层用来添加授权策略 **查看 `miniblog\internal\miniblog\controller\v1\user\create.go`**
+
+##### 调用链路：
+
+1. 初始化阶段
+
+```plain
+run()
+  │
+  ├─ initStore()  → 创建 store.S（含 *gorm.DB）
+  │
+  └─ installRouters(g)
+       │
+       ├─ ① auth.NewAuthz(store.S.DB())
+       │     │
+       │     ├─ adapter.NewAdapterByDB(db)  → 创建 GORM 适配器，自动建 casbin_rule 表
+       │     ├─ model.NewModelFromString(aclModel)  → 加载 ACL 模型
+       │     ├─ casbin.NewSyncedEnforcer(m, adapter)  → 创建线程安全的决策引擎
+       │     ├─ enforcer.LoadPolicy()  → 从 casbin_rule 表加载策略到内存
+       │     └─ enforcer.StartAutoLoadPolicy(5s)  → 每 5 秒自动刷新策略
+       │
+       ├─ ② uc := user.New(store.S, authz)  → Controller 持有 authz 实例
+       │
+       └─ ③ 路由注册：
+            userv1.Use(mw.Authn(), mw.Authz(authz))  ← 先认证再授权
+            userv1.GET(":name", uc.Get)  ← 受保护路由
+```
+
+2. 请求时调用
+
+```plain
+客户端请求: GET /v1/users/root
+Header: Authorization: Bearer <token>
+    │
+    ▼
+════════════════════════════════════════════════════════
+ Gin 中间件链（按顺序执行）
+════════════════════════════════════════════════════════
+    │
+    ├─ ① Recovery / NoCache / Cors / Secure / RequestID（通用中间件）
+    │
+    ├─ ② mw.Authn()  ← 认证中间件
+    │     │
+    │     ├─ token.ParseRequest(c)  → 从 Authorization 头解析 JWT
+    │     ├─ 校验签名、解析 claims
+    │     ├─ 提取 username（如 "root"）
+    │     └─ c.Set("X-Username", "root")  → 写入 gin context
+    │
+    ├─ ③ mw.Authz(authz)  ← 授权中间件
+    │     │
+    │     ├─ sub := c.GetString("X-Username")  → "root"
+    │     ├─ obj := c.Request.URL.Path  → "/v1/users/root"
+    │     ├─ act := c.Request.Method  → "GET"
+    │     │
+    │     └─ authz.Authorize("root", "/v1/users/root", "GET")
+    │           │
+    │           └─ casbin enforcer.Enforce(sub, obj, act)
+    │                 │
+    │                 ├─ 在内存策略中查找匹配规则
+    │                 │   匹配逻辑：
+    │                 │   r.sub == p.sub  → "root" == ?
+    │                 │   keyMatch(r.obj, p.obj)  → 路径模式匹配
+    │                 │   regexMatch(r.act, p.act)  → 方法正则匹配
+    │                 │
+    │                 ├─ 匹配成功 → return true → c.Next() 放行
+    │                 └─ 匹配失败 → return false → 返回 ErrUnauthorized + Abort
+    │
+    ▼ （授权通过后）
+════════════════════════════════════════════════════════
+ Controller 层
+════════════════════════════════════════════════════════
+    │
+    └─ uc.Get(c)  → ctrl.b.Users().Get(c, "root")
+         │
+         ▼
+     Biz → Store → MySQL → 返回用户信息
+         │
+         ▼
+     core.GenarateResponse(c, nil, userInfo)
+```

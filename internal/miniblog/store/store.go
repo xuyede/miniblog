@@ -20,6 +20,7 @@ var (
 
 // IStore 定义了 Store 层需要实现的方法.
 type IStore interface {
+	DB() *gorm.DB
 	Users() UserStore
 }
 
@@ -31,6 +32,10 @@ type datastore struct {
 // Users 返回一个实现了 UserStore 接口的实例.
 func (ds *datastore) Users() UserStore {
 	return newUsers(ds.db)
+}
+
+func (ds *datastore) DB() *gorm.DB {
+	return ds.db
 }
 
 // 确保 datastore 实现了 IStore 接口.
