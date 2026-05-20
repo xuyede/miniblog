@@ -707,3 +707,121 @@ Header: Authorization: Bearer <token>
          ▼
      core.GenarateResponse(c, nil, userInfo)
 ```
+
+### 2. HTTPS
+
+在真实的企业应用中，我们通常可以通过以下 2 种方式来使用 HTTPS：
+
+- 使用 HTTPS 的数据传输加密能力，开启 HTTPS 单向认证，验证服务端合法性。服务端对客户端的认证则采用其他认证方式，例如：Bearer 认证。miniblog 就使用了这种方式；
+
+- 使用 HTTPS 的数据传输加密能力，并通过 HTTPS 进行双向认证。
+
+#### CA证书
+
+CA 证书的认证分为单向认证和双向认证，在实际开发过程中，可根据需要自行选择：
+
+单向认证：用户数目广泛，且无需在通讯层对用户身份进行验证，一般都是在应用逻辑层保证用户的合法登入
+
+双向认证：要求通信双方要相互验证身份。例如，在企业的应用服务之间存在调用关系的时候，可能需要对通信双方做身份验证
+
+#### 自签证书
+
+签发 CA 证书是由权威的 CA 机构签发的，签发流程麻烦，并且收费贵。在后端应用开发中，通常由开发/运维自己生成根证书和根证书私钥，然后扮演 CA 的角色，负责给其他服务端和客户端签发证书（这些签发的证书也叫自签证书）
+
+```plain
+一、签发根证书和私钥
+<!-- ca.key - CA 的"印章"，用来签发其他证书。绝对保密 -->
+1. 生成根证书私钥
+openssl genrsa -out ca.key 1024
+
+<!-- ca.csr - 生成 CA 自签名证书的中间产物 -->
+2. 生成请求文件
+openssl req -new -key ca.key -out ca.csr -subj "//C=CN/ST=Guangdong/L=Shenzhen/O=devops/OU=it/CN=127.0.0.1/emailAddress=will3virgo@163.com"
+
+<!-- ca.crt - CA公钥，客户端/服务端用它来验证对方证书是否由该 CA 签发 -->
+3. 生成根证书
+openssl x509 -req -in ca.csr -signkey ca.key -out ca.crt
+
+二、生成服务端证书
+<!-- server.key -->
+1. 生成服务端私钥
+openssl genrsa -out server.key 1024
+
+<!-- server.pem -->
+2. 生成服务端公钥
+openssl rsa -in server.key -pubout -out server.pem
+
+<!-- server.csr - 提交给 CA 说"请给我签一张证书" -->
+3. 生成服务端向 CA 申请签名的 CSR
+openssl req -new -key server.key -out server.csr -subj "//C=CN/ST=Guangdong/L=Shenzhen/O=serverdevops/OU=serverit/CN=127.0.0.1/emailAddress=will3virgo@163.com"
+
+<!-- server.crt - 服务端的身份证明，包含公钥 + CA 签名 -->
+4. 生成服务端带有 CA 签名的证书
+openssl x509 -req -CA ca.crt -CAkey ca.key -CAcreateserial -in server.csr -out server.crt
+
+三、生成客户端证书
+<!-- client.key -->
+1. 生成客户端私钥
+openssl genrsa -out client.key 1024
+
+<!-- client.pem -->
+2. 生成客户端公钥
+openssl rsa -in client.key -pubout -out client.pem
+
+<!-- client.csr -->
+3. 生成客户端向 CA 申请签名的 CSR
+openssl req -new -key client.key -out client.csr -subj "//C=CN/ST=Guangdong/L=Shenzhen/O=clientdevops/OU=clientit/CN=127.0.0.1/emailAddress=will3virgo@163.com"
+
+<!-- client.crt -->
+4. 生成客户端带有 CA 签名的证书
+$ openssl x509 -req -CA ca.crt -CAkey ca.key -CAcreateserial -in client.csr -out client.crt
+```
+
+单向认证：
+![alt text](image-12.png)
+
+> 提示：服务端给客户端的证书 = 公钥（服务端生成密码对中的公钥）+ 申请者与颁发者信息 + 签名（用CA机构生成的密码对的私钥进行签名）。
+第 3 步用的是 CA 机构证书（根证书）的公钥解密签名。根证书：CA 自己的证书，预装在操作系统 / 浏览器，不可篡改
+
+```plain
+客户端                                    服务端
+  │                                         │
+  │──── ① ClientHello ──────────────────▶  │
+  │                                         │
+  │◀─── ② ServerHello + server.crt ──────  │  ← 服务端把证书发给客户端
+  │                                         │
+  │  ③ 客户端用 ca.crt 验证 server.crt       │  ← 确认是"可信 CA"签的
+  │     验签通过 → 提取 server 公钥           │
+  │                                         │
+  │──── ④ 用 server 公钥加密随机密钥 ─────▶  │
+  │                                         │
+  │  服务端用 server.key 解密                │  ← 只有持有私钥才能解开
+  │                                         │
+  │◀═══ ⑤ 双方建立对称加密通道 ═══════════▶ │
+  │         后续数据全部加密传输              │
+```
+
+用到的文件：
+
+- 服务端加载：server.crt + server.key（或 server.pem）
+- 客户端信任：ca.crt
+
+双向认证：
+![alt text](image-13.png)
+```plain
+客户端                                    服务端
+  │                                         │
+  │  ...（前面步骤相同）...                   │
+  │                                         │
+  │◀─── ⑥ CertificateRequest ────────────  │  ← 服务端要求客户端证书
+  │                                         │
+  │──── ⑦ client.crt ───────────────────▶  │  ← 客户端把证书发过去
+  │                                         │
+  │  服务端用 ca.crt 验证 client.crt         │  ← 确认客户端也是可信的
+  │                                         │
+  │◀═══ ⑧ 双向验证通过，建立加密通道 ══════▶ │
+```
+用到的文件：
+
+- 服务端加载：server.crt + server.key + ca.crt（验证客户端）
+- 客户端加载：client.crt + client.key（或 client.pem） + ca.crt（验证服务端）

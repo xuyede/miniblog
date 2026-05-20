@@ -105,22 +105,11 @@ func run() error {
 		return err
 	}
 
-	// 创建 HTTP Server 实例
-	httpsrv := &http.Server{
-		Addr: viper.GetString("addr"),
-		// Handler 是一个接口类型，Gin 的 Engine 实现了 http.Handler 接口
-		// 因此可以直接将 Gin 的 Engine 作为 Handler 使用
-		Handler: g,
-	}
+	// 创建并运行 HTTP 服务器
+	httpsrv := startInsecureServer(g)
 
-	// 启动 HTTP Server
-	log.Infow("监听服务端口", "addr", viper.GetString("addr"))
-	go func() {
-		// 正常关闭时会返回 http.ErrServerClosed 错误，这不算错误，所以用 !errors.Is 过滤掉
-		if err := httpsrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Errorw("启动 HTTP Server 失败", "error", err.Error())
-		}
-	}()
+	// 创建并运行 HTTPS 服务器
+	httpssrv := startSecureServer(g)
 
 	// 等待中断信号优雅地关闭服务器（10 秒超时)
 	quit := make(chan os.Signal, 1)
@@ -137,11 +126,48 @@ func run() error {
 
 	// 10 秒内优雅关闭服务（将未处理完的请求处理完再关闭服务），超过 10 秒就超时退出
 	if err := httpsrv.Shutdown(ctx); err != nil {
-		log.Errorw("服务被迫关闭", "err", err)
+		log.Errorw("HTTP 服务强制退出", "err", err)
+		return err
+	}
+	if err := httpssrv.Shutdown(ctx); err != nil {
+		log.Errorw("HTTPS 服务强制退出", "err", err)
 		return err
 	}
 
-	log.Infow("服务退出")
+	log.Infow("服务已退出")
 
 	return nil
+}
+
+func startSecureServer(g *gin.Engine) *http.Server {
+	httpsSrv := &http.Server{
+		Addr:    viper.GetString("tls.addr"),
+		Handler: g,
+	}
+
+	log.Infow("监听 TLS 服务端口", "addr", viper.GetString("tls.addr"))
+	cert, key := viper.GetString("tls.cert"), viper.GetString("tls.key")
+	if cert != "" && key != "" {
+		go func() {
+			if err := httpsSrv.ListenAndServeTLS(cert, key); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				log.Errorw("启动 HTTPS Server 失败", "error", err.Error())
+			}
+		}()
+	}
+
+	return httpsSrv
+}
+
+func startInsecureServer(g *gin.Engine) *http.Server {
+	// 创建 HTTP Server 实例
+	httpSrv := &http.Server{Addr: viper.GetString("addr"), Handler: g}
+
+	log.Infow("监听服务端口", "addr", viper.GetString("addr"))
+	go func() {
+		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Errorw("启动 HTTP Server 失败", "error", err.Error())
+		}
+	}()
+
+	return httpSrv
 }
