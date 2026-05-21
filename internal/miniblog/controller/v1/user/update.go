@@ -7,25 +7,23 @@ package user
 
 import (
 	"github.com/gin-gonic/gin"
-
 	"github.com/xuyede/miniblog/internal/pkg/core"
 	"github.com/xuyede/miniblog/internal/pkg/log"
 	v1 "github.com/xuyede/miniblog/pkg/api/miniblog/v1"
 )
 
-func (ctrl *UserController) Login(c *gin.Context) {
-	log.C(c).Infow("POST /login called")
+func (ctrl *UserController) Update(c *gin.Context) {
+	log.C(c).Infow("PUT /v1/users/:name called")
 
-	r := core.BindAndValidate[v1.LoginRequest](c)
+	r := core.BindAndValidate[v1.UpdateUserRequest](c)
 	if r == nil {
 		return
 	}
 
-	resp, err := ctrl.b.Users().Login(c, r)
-	if err != nil {
+	if err := ctrl.b.Users().Update(c, c.Param("name"), r); err != nil {
 		core.GenarateResponse(c, err, nil)
 		return
 	}
 
-	core.GenarateResponse(c, nil, resp)
+	core.GenarateResponse(c, nil, nil)
 }

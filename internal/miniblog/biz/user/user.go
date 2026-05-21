@@ -37,6 +37,7 @@ type UserBiz interface {
 	ChangePassword(ctx context.Context, username string, r *v1.ChangePasswordRequest) error
 	Get(ctx context.Context, username string) (*v1.GetUserResponse, error)
 	List(ctx context.Context, offset, limit int) (*v1.ListUserResponse, error)
+	Update(ctx context.Context, username string, r *v1.UpdateUserRequest) error
 }
 
 func (u *userBiz) Create(ctx context.Context, r *v1.CreateUserRequest) error {
@@ -138,6 +139,31 @@ func (b *userBiz) List(ctx context.Context, offset, limit int) (*v1.ListUserResp
 	log.C(ctx).Debugw("Get users from backend storage", "count", len(users))
 
 	return &v1.ListUserResponse{TotalCount: count, Users: users}, nil
+}
+
+func (b *userBiz) Update(ctx context.Context, username string, user *v1.UpdateUserRequest) error {
+	userM, err := b.ds.Users().Get(ctx, username)
+	if err != nil {
+		return err
+	}
+
+	if user.Email != "" {
+		userM.Email = user.Email
+	}
+
+	if user.Phone != "" {
+		userM.Phone = user.Phone
+	}
+
+	if user.Nickname != "" {
+		userM.Nickname = user.Nickname
+	}
+
+	if err := b.ds.Users().Update(ctx, userM); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // 确保 userBiz 实现了 UserBiz 接口.

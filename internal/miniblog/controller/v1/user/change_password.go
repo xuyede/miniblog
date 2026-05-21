@@ -6,11 +6,9 @@
 package user
 
 import (
-	"github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
 
 	"github.com/xuyede/miniblog/internal/pkg/core"
-	"github.com/xuyede/miniblog/internal/pkg/errno"
 	"github.com/xuyede/miniblog/internal/pkg/log"
 	v1 "github.com/xuyede/miniblog/pkg/api/miniblog/v1"
 )
@@ -18,20 +16,12 @@ import (
 func (ctrl *UserController) ChangePassword(c *gin.Context) {
 	log.C(c).Infow("POST /v1/users/:name/change_password called")
 
-	var r v1.ChangePasswordRequest
-	// 把请求 body 反序列化为 ChangePasswordRequest
-	if err := c.ShouldBindJSON(&r); err != nil {
-		core.GenarateResponse(c, errno.ErrBind, nil)
+	r := core.BindAndValidate[v1.ChangePasswordRequest](c)
+	if r == nil {
 		return
 	}
 
-	if _, err := govalidator.ValidateStruct(r); err != nil {
-		core.GenarateResponse(c, errno.ErrInvalidParameter.SetMessage(err.Error()), nil)
-
-		return
-	}
-
-	if err := ctrl.b.Users().ChangePassword(c, c.Param("name"), &r); err != nil {
+	if err := ctrl.b.Users().ChangePassword(c, c.Param("name"), r); err != nil {
 		core.GenarateResponse(c, err, nil)
 
 		return
