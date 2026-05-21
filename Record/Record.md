@@ -781,7 +781,7 @@ $ openssl x509 -req -CA ca.crt -CAkey ca.key -CAcreateserial -in client.csr -out
 ![alt text](image-12.png)
 
 > 提示：服务端给客户端的证书 = 公钥（服务端生成密码对中的公钥）+ 申请者与颁发者信息 + 签名（用CA机构生成的密码对的私钥进行签名）。
-第 3 步用的是 CA 机构证书（根证书）的公钥解密签名。根证书：CA 自己的证书，预装在操作系统 / 浏览器，不可篡改
+> 第 3 步用的是 CA 机构证书（根证书）的公钥解密签名。根证书：CA 自己的证书，预装在操作系统 / 浏览器，不可篡改
 
 ```plain
 客户端                                    服务端
@@ -808,6 +808,7 @@ $ openssl x509 -req -CA ca.crt -CAkey ca.key -CAcreateserial -in client.csr -out
 
 双向认证：
 ![alt text](image-13.png)
+
 ```plain
 客户端                                    服务端
   │                                         │
@@ -821,7 +822,186 @@ $ openssl x509 -req -CA ca.crt -CAkey ca.key -CAcreateserial -in client.csr -out
   │                                         │
   │◀═══ ⑧ 双向验证通过，建立加密通道 ══════▶ │
 ```
+
 用到的文件：
 
 - 服务端加载：server.crt + server.key + ca.crt（验证客户端）
 - 客户端加载：client.crt + client.key（或 client.pem） + ca.crt（验证服务端）
+
+## 八、RPC
+
+RPC = Remote Procedure Call 远程过程调用
+
+> 简单说：调用远程服务器的函数，像调用本地函数一样简单。
+
+### 1. gRPC
+
+gRPC 是 Google 开源的高性能 RPC 框架
+
+> 基于 HTTP/2 + Protobuf 实现，目前企业微服务首选 RPC 框架
+
+调用流程：
+![alt text](image-14.png)
+
+上图中的调用流程如下：
+
+- 客户端（gRPC Sub）调用 A 方法，发起 RPC 调用；
+
+- 对请求信息使用 Protobuf 进行对象序列化压缩（IDL）；
+
+- 服务端（gRPC Server）接收到请求后，解码请求体，进行业务逻辑处理并返回；
+
+- 对响应结果使用 Protobuf 进行对象序列化压缩（IDL）；
+
+- 客户端接收到服务端响应，解码请求体。回调被调用的 A 方法，唤醒正在等待响应（阻塞）的客户端调用并返回响应结果。
+
+### 2. Protocol Buffers
+
+快速学习 [proto 语法](https://grpc.io/docs/languages/go/quickstart/)
+
+### 3. 开发miniblog的 gRPC
+
+可以通过以下 4 步来实现：
+
+- 定义 gRPC 服务 **查看 `miniblog\pkg\proto\miniblog\v1\miniblog.proto`**
+
+- 生成客户端和服务器代码；
+
+- 实现 gRPC 服务端；
+
+- 实现 gRPC 客户端。
+
+#### 定义服务
+
+gRPC 支持定义 4 种类型的服务方法
+
+- 简单模式（Simple RPC）：是最简单的 gRPC 模式。客户端发起一次请求，服务端响应一个数据
+
+  > 定义格式为 `rpc SayHello (HelloRequest) returns (HelloReply) {}`
+
+- 服务端数据流模式（Server-side streaming RPC）：客户端发送一个请求，服务器返回数据流响应，客户端从流中读取数据直到为空
+
+  > 定义格式为 `rpc SayHello (HelloRequest) returns (stream HelloReply) {}`
+
+- 客户端数据流模式（Client-side streaming RPC）：客户端将消息以流的方式发送给服务器，服务器全部处理完成之后返回一次响应
+
+  > 定义格式为 `rpc SayHello (stream HelloRequest) returns (HelloReply) {}`
+
+- 双向数据流模式（Bidirectional streaming RPC）：客户端和服务端都可以向对方发送数据流，这个时候双方的数据可以同时互相发送，也就是可以实现实时交互 RPC 框架原理
+
+  > 定义格式为 `rpc SayHello (stream HelloRequest) returns (stream HelloReply) {}`
+
+接口参数定义
+
+[docs](https://protobuf.dev/programming-guides/proto3/)
+
+生成 `.pb.go` 文件
+
+> 执行 `make protoc`
+
+上述命令会在 pkg/proto/miniblog/v1/ 目录下生成以下 2 个文件：
+
+- miniblog.pb.go：根据 message 关键字所指定的消息结构体，生成对应的 Go 结构体和方法的保存文件；
+
+- miniblog_grpc.pb.go：根据 service 关键字所指定的 gRPC 服务定义，生成对应的 interface 和方法的保存文件。
+
+#### 实现服务端的客户端的连接
+
+涉及文件：
+
+![alt text](image-15.png)
+
+初始化：
+
+```plain
+run()
+  │
+  ├─ initStore()  → 初始化数据库连接
+  │
+  └─ startGRPCServer()        → gRPC :9090
+       │
+       ├─ net.Listen("tcp", ":9090")
+       ├─ grpc.NewServer()  → 创建 gRPC 服务实例
+       ├─ pb.RegisterMiniBlogServer(grpcsrv, user.New(store.S, nil))
+       │     │
+       │     ├─ user.New() 返回 *UserController（嵌入了 UnimplementedMiniBlogServer）
+       │     └─ 将 UserController 注册到 MiniBlog_ServiceDesc 的方法表中
+       │           Methods: [{MethodName:"ListUser", Handler: _MiniBlog_ListUser_Handler}]
+       │
+       └─ go grpcsrv.Serve(lis)  → 在 goroutine 中监听请求
+```
+
+请求时调用：
+
+```plain
+客户端 (examples/client/main.go)
+────────────────────────────────
+  │
+  ├─ grpc.NewClient("localhost:9090")  → 建立 TCP/HTTP2 连接
+  ├─ pb.NewMiniBlogClient(conn)        → 创建客户端代理
+  │
+  └─ c.ListUser(ctx, &pb.ListUserRequest{Offset: 0, Limit: 10})
+       │
+       ├─ 序列化 ListUserRequest 为 protobuf 二进制
+       ├─ cc.Invoke("/v1.MiniBlog/ListUser", in, out)
+       │     │
+       │     └─── HTTP/2 POST ──────────────────────────────────────▶
+       │
+       │
+服务端 (gRPC Server :9090)
+────────────────────────────────
+       │
+       ├─ 收到请求，解析路径 "/v1.MiniBlog/ListUser"
+       │
+       ├─ 查找 MiniBlog_ServiceDesc.Methods
+       │   匹配 MethodName: "ListUser" → Handler: _MiniBlog_ListUser_Handler
+       │
+       ├─ _MiniBlog_ListUser_Handler(srv, ctx, dec, interceptor)
+       │     │
+       │     ├─ dec(in)  → 反序列化 protobuf 为 *ListUserRequest
+       │     │
+       │     └─ srv.(MiniBlogServer).ListUser(ctx, in)
+       │           │
+       │           │  类型断言：srv 实际是 *UserController
+       │           │  UserController 自己定义了 ListUser 方法 → 调用它
+       │           │
+       │           ▼
+       ├─ UserController.ListUser(ctx, r)     ← controller/v1/user/list.go
+       │     │
+       │     ├─ ctrl.b.Users().List(ctx, *r.Offset, *r.Limit)
+       │     │     │
+       │     │     ▼
+       │     ├─ userBiz.List(ctx, offset, limit)  ← biz/user/user.go
+       │     │     │
+       │     │     ├─ b.ds.Users().List(ctx, offset, limit)
+       │     │     │     │
+       │     │     │     ▼
+       │     │     ├─ users.List(ctx, offset, limit)  ← store/user.go
+       │     │     │     │
+       │     │     │     └─ db.Offset().Limit().Order().Find().Count()
+       │     │     │           └─ SELECT * FROM user ORDER BY id DESC LIMIT ? OFFSET ?
+       │     │     │
+       │     │     └─ 返回 []*model.UserM → 转换为 []*v1.UserInfo
+       │     │
+       │     └─ 组装 *pb.ListUserResponse{TotalCount, Users}
+       │
+       ├─ 序列化 ListUserResponse 为 protobuf 二进制
+       │
+       └─── HTTP/2 响应 ◀──────────────────────────────────────────
+       │
+客户端
+       │
+       └─ 反序列化得到 *pb.ListUserResponse → 打印结果
+```
+
+## 九、测试用例
+
+在实际开发中，开发者一般不太习惯随时编写单元测试用例，并不是说编写单元测试用例不重要，而是因为很多时候，实现功能需求优先级更高。这里分享下我对编写单元测试用例的一点思考：
+
+- 编写单元测试用例很重要，但单元测试用例并不一定需要边开发边编写。很多时候，我们需要在功能开发进度和编写单元测试用例之间进行权衡；
+
+- 对于开发过程中，需要编写代码测试某块功能的时候，不妨顺便将测试代码变成单元测试用例；
+
+- 单元测试用例对后期的代码维护很重要，在项目上线后，如果有时间，建议补全单元测试用例。
+
+### 1. 编写测试用例

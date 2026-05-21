@@ -7,6 +7,7 @@ package miniblog
 
 import (
 	"github.com/gin-gonic/gin"
+
 	"github.com/xuyede/miniblog/internal/miniblog/controller/v1/user"
 	"github.com/xuyede/miniblog/internal/miniblog/store"
 	"github.com/xuyede/miniblog/internal/pkg/core"

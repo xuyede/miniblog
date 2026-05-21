@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,10 +19,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
 
+	"github.com/xuyede/miniblog/internal/miniblog/controller/v1/user"
+	"github.com/xuyede/miniblog/internal/miniblog/store"
 	"github.com/xuyede/miniblog/internal/pkg/known"
 	"github.com/xuyede/miniblog/internal/pkg/log"
 	mw "github.com/xuyede/miniblog/internal/pkg/middleware"
+	pb "github.com/xuyede/miniblog/pkg/proto/miniblog/v1"
 	"github.com/xuyede/miniblog/pkg/token"
 	"github.com/xuyede/miniblog/pkg/version/verflag"
 )
@@ -111,6 +116,9 @@ func run() error {
 	// 创建并运行 HTTPS 服务器
 	httpssrv := startSecureServer(g)
 
+	// 创建并运行 GRPC 服务器
+	grpcsrv := startGRPCServer()
+
 	// 等待中断信号优雅地关闭服务器（10 秒超时)
 	quit := make(chan os.Signal, 1)
 	// kill 默认会发送 syscall.SIGTERM 信号
@@ -134,6 +142,8 @@ func run() error {
 		return err
 	}
 
+	grpcsrv.GracefulStop()
+
 	log.Infow("服务已退出")
 
 	return nil
@@ -150,7 +160,7 @@ func startSecureServer(g *gin.Engine) *http.Server {
 	if cert != "" && key != "" {
 		go func() {
 			if err := httpsSrv.ListenAndServeTLS(cert, key); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				log.Errorw("启动 HTTPS Server 失败", "error", err.Error())
+				log.Fatalw("启动 HTTPS Server 失败", "error", err.Error())
 			}
 		}()
 	}
@@ -165,9 +175,34 @@ func startInsecureServer(g *gin.Engine) *http.Server {
 	log.Infow("监听服务端口", "addr", viper.GetString("addr"))
 	go func() {
 		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Errorw("启动 HTTP Server 失败", "error", err.Error())
+			log.Fatalw("启动 HTTP Server 失败", "error", err.Error())
 		}
 	}()
 
 	return httpSrv
+}
+
+func startGRPCServer() *grpc.Server {
+	// 监听 GRPC 服务端口
+	lis, err := net.Listen("tcp", viper.GetString("grpc.addr"))
+	if err != nil {
+		log.Fatalw("Failed to listen", "err", err)
+	}
+
+	// 创建 GRPC Server 实例
+	grpcsrv := grpc.NewServer()
+	// user.New(store.S, nil)执行返回 *UserController 对象
+	// 使得 GRPC Server 能够通过 *UserController 的接口去处理来自客户端的请求
+	pb.RegisterMiniBlogServer(grpcsrv, user.New(store.S, nil))
+
+	// 运行 GRPC 服务器。在 goroutine 中启动服务器，它不会阻止下面的正常关闭处理流程
+	// 打印一条日志，用来提示 GRPC 服务已经起来，方便排障
+	log.Infow("监听 GRPC 服务端口", "addr", viper.GetString("grpc.addr"))
+	go func() {
+		if err := grpcsrv.Serve(lis); err != nil {
+			log.Fatalw("启动 GRPC Server 失败", "error", err.Error())
+		}
+	}()
+
+	return grpcsrv
 }
