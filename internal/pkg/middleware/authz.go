@@ -27,6 +27,7 @@ func Authz(a Auther) gin.HandlerFunc {
 
 		// 接口解耦：中间件依赖 Auther 接口（只要有 Authorize 方法），不直接依赖 Casbin 具体实现
 		if allowed, _ := a.Authorize(sub, obj, act); !allowed {
+			log.Debugw("授权失败", "sub", sub, "obj", obj, "act", act)
 			core.GenarateResponse(c, errno.ErrUnauthorized, nil)
 			c.Abort()
 			return

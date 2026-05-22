@@ -15,9 +15,18 @@ import (
 // 成功返回解析后的结构体指针，失败则自动写入错误响应并返回 nil。
 func BindAndValidate[T any](c *gin.Context) *T {
 	var r T
-	if err := c.ShouldBindJSON(&r); err != nil {
-		GenarateResponse(c, errno.ErrBind, nil)
-		return nil
+
+	// 如果是GET请求，应该直接从请求链接中获取参数，否则从请求 body 中获取参数
+	if c.Request.Method == "GET" {
+		if err := c.ShouldBindQuery(&r); err != nil {
+			GenarateResponse(c, errno.ErrBind, nil)
+			return nil
+		}
+	} else {
+		if err := c.ShouldBindJSON(&r); err != nil {
+			GenarateResponse(c, errno.ErrBind, nil)
+			return nil
+		}
 	}
 
 	if _, err := govalidator.ValidateStruct(r); err != nil {

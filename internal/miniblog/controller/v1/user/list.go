@@ -11,11 +11,14 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/gin-gonic/gin"
+	"github.com/xuyede/miniblog/internal/pkg/core"
 	"github.com/xuyede/miniblog/internal/pkg/log"
+	v1 "github.com/xuyede/miniblog/pkg/api/miniblog/v1"
 	pb "github.com/xuyede/miniblog/pkg/proto/miniblog/v1"
 )
 
-// ListUser 返回用户列表，只有 root 用户才能获取用户列表.
+// ListUser 返回用户列表，只有 root 用户才能获取用户列表. PRC使用
 func (ctrl *UserController) ListUser(ctx context.Context, r *pb.ListUserRequest) (*pb.ListUserResponse, error) {
 	log.C(ctx).Infow("ListUser function called")
 
@@ -45,4 +48,18 @@ func (ctrl *UserController) ListUser(ctx context.Context, r *pb.ListUserRequest)
 	}
 
 	return ret, nil
+}
+
+func (ctrl *UserController) List(c *gin.Context) {
+	log.C(c).Infow("GET /v1/users called")
+
+	r := core.BindAndValidate[v1.ListUserRequest](c)
+
+	resp, err := ctrl.b.Users().List(c, int(r.Offset), int(r.Limit))
+	if err != nil {
+		core.GenarateResponse(c, err, nil)
+		return
+	}
+
+	core.GenarateResponse(c, nil, resp)
 }

@@ -38,6 +38,7 @@ type UserBiz interface {
 	Get(ctx context.Context, username string) (*v1.GetUserResponse, error)
 	List(ctx context.Context, offset, limit int) (*v1.ListUserResponse, error)
 	Update(ctx context.Context, username string, r *v1.UpdateUserRequest) error
+	Delete(ctx context.Context, username string) error
 }
 
 func (u *userBiz) Create(ctx context.Context, r *v1.CreateUserRequest) error {
@@ -163,6 +164,13 @@ func (b *userBiz) Update(ctx context.Context, username string, user *v1.UpdateUs
 		return err
 	}
 
+	return nil
+}
+
+func (u *userBiz) Delete(ctx context.Context, username string) error {
+	if err := u.ds.Users().Delete(ctx, username); err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -31,6 +31,9 @@ var (
 	// ErrUserNotFound 表示用户不存在.
 	ErrUserNotFound = &Errno{HTTP: 404, Code: "UserNotFound", Message: "User not found."}
 
+	// ErrUserAlreadyExists 表示用户已存在.
+	ErrUserAlreadyExists = &Errno{HTTP: 400, Code: "UserAlreadyExists", Message: "User already exists."}
+
 	// ErrPasswordIncorrect 表示密码错误.
 	ErrPasswordIncorrect = &Errno{HTTP: 401, Code: "AuthFailure.PasswordIncorrect", Message: "Password was incorrect."}
 

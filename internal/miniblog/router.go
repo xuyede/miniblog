@@ -50,8 +50,10 @@ func installRouters(g *gin.Engine) error {
 			userv1.POST("", uc.Create)
 			userv1.PUT(":name/change-password", uc.ChangePassword)
 			userv1.Use(mw.Authn(), mw.Authz(authz))
-			userv1.GET(":name", uc.Get)    // 获取用户详情
-			userv1.PUT(":name", uc.Update) // 更新用户信息
+			userv1.GET(":name", uc.Get)       // 获取用户详情
+			userv1.PUT(":name", uc.Update)    // 更新用户信息
+			userv1.GET("", uc.List)           // 获取用户列表 只有 root 用户才能访问
+			userv1.DELETE(":name", uc.Delete) // 注销用户
 		}
 	}
 
