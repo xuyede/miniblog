@@ -30,3 +30,4 @@ go.work
 /_output
 /_crash
 tmp
+.ai-code-tracker.json

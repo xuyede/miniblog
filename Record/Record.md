@@ -1005,3 +1005,56 @@ run()
 - 单元测试用例对后期的代码维护很重要，在项目上线后，如果有时间，建议补全单元测试用例。
 
 ### 1. 编写测试用例
+
+go 自带测试框架 `testing`，满足以下规范
+
+- 文件名必须是 `_test.go` 结尾，跟源文件在同一个包
+
+- 测试用例函数必须以 `Test、Benchmark、Example、Fuzz` 开头
+
+- 执行测试用例时的顺序，会按照源码中的顺序依次执行
+
+- 单元测试函数 `TestXxx()` 的参数是 `testing.T`，可以使用该类型来记录错误或测试状态；
+
+- 性能测试函数 `BenchmarkXxx()` 的参数是 `testing.B`，函数内以 b.N 作为循环次数，其中 N 会动态变化；
+
+- 示例函数 `ExampleXxx()` 没有参数，执行完会`将输出与注释 // Output: `进行对比；
+
+- 通过调用 testing.T 的 Error、Errorf、FailNow、Fatal、FatalIf 方法来说明测试不通过，通过调用 Log、Logf 方法来记录测试信息
+
+```plain
+t.Log t.Logf     # 正常信息
+t.Error t.Errorf # 测试失败信息
+t.Fatal t.Fatalf # 致命错误，测试程序退出的信息
+t.Fail     # 当前测试标记为失败
+t.Failed   # 查看失败标记
+t.FailNow  # 标记失败，并终止当前测试函数的执行，需要注意的是，我们只能在运行测试函数的 Goroutine 中调用 t.FailNow 方法，而不能在我们在测试代码创建出的 Goroutine 中调用它
+t.Skip     # 调用 t.Skip 方法相当于先后对 t.Log 和 t.SkipNow 方法进行调用，而调用 t.Skipf 方法则相当于先后对 t.Logf 和 t.SkipNow 方法进行调用。方法 t.Skipped 的结果值会告知我们当前的测试是否已被忽略
+t.Parallel # 标记为可并行运算
+```
+
+#### 单元测试
+
+```bash
+go test
+
+# 详细信息
+go test -v
+
+# 执行指定次数
+go test -v -count 2
+
+# 执行指定单测
+go test -run Testxxx -v
+```
+
+#### 性能测试
+
+```bash
+go test -test.bench= ".*"
+
+# 生成指标文件
+go test -bench= ".*" -cpuprofile=cpu.profile
+# 查看性能（进入交互界面后执行 top 指令）
+go tool pprof id.test cpu.profile
+```
